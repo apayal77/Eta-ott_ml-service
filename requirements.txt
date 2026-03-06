@@ -1,0 +1,24 @@
+fastapi
+uvicorn
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
+torchaudio
+sentence-transformers
+transformers
+pillow
+pymupdf
+openai-whisper
+python-multipart
+pydantic
+requests
+python-dotenv
+cloudinary
+moviepy
+yt-dlp
+beautifulsoup4
+playwright
+html2text
+fpdf2
+python-docx
+google-api-python-client
