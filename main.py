@@ -29,6 +29,13 @@ class ExtractionResponse(BaseModel):
     message: str
     data: Optional[dict] = None
 
+class OCRRequest(BaseModel):
+    image_base64: Optional[str] = None
+    video_url: Optional[str] = None
+    timestamp: Optional[float] = 0
+    crop: Optional[dict] = None # {x, y, w, h} as 0-1 relative values
+    content_type: str = 'image' # 'image' or 'video'
+
 @app.get("/")
 async def root():
     return {"status": "online", "message": "Eta ML Service is running"}
@@ -55,6 +62,95 @@ def get_embeddings(request: EmbeddingRequest):
         return {"success": True, "embedding": embedding}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+# OCR Reader (Lazy-loaded)
+_ocr_reader = None
+
+def get_ocr_reader():
+    global _ocr_reader
+    if _ocr_reader is None:
+        import easyocr
+        print("⏳ Loading EasyOCR reader...")
+        # Use CPU for now as it's more reliable in cloud envs without GPU
+        _ocr_reader = easyocr.Reader(['en'], gpu=False)
+    return _ocr_reader
+
+@app.post("/ocr-frame")
+def ocr_frame(request: OCRRequest):
+    """
+    Extract text from a video frame or image using EasyOCR
+    """
+    log_file = "ocr_debug.log"
+    def log(msg):
+        try:
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.write(f"{msg}\n")
+            # Safe print for Windows terminal
+            print(msg.encode('ascii', 'replace').decode('ascii'))
+        except:
+            pass
+
+    log(f"\n--- [OCR START] type={request.content_type} ---")
+    
+    try:
+        import base64
+        import io
+        from PIL import Image
+        import numpy as np
+
+        reader = get_ocr_reader()
+        clean_base64 = None
+        
+        if request.content_type == 'video' and request.video_url:
+            from extractors.video_extractor import capture_frame_at_time
+            log(f"VIDEO: {request.video_url} at {request.timestamp}s")
+            
+            frame_base64 = capture_frame_at_time(request.video_url, request.timestamp, request.crop)
+            if not frame_base64:
+                log("FAIL: Frame capture None")
+                return {"success": False, "error": "Failed to capture frame from video URL", "text": ""}
+            
+            clean_base64 = frame_base64
+            log(f"SUCCESS: Frame capture len={len(clean_base64)}")
+        elif request.image_base64:
+            log("IMAGE: Direct base64")
+            if ',' in request.image_base64:
+                clean_base64 = request.image_base64.split(',')[1]
+            else:
+                clean_base64 = request.image_base64
+        
+        if not clean_base64:
+            log("ERROR: No image data")
+            return {"success": False, "error": "No data source", "text": ""}
+
+        # Convert base64 to image
+        img_data = base64.b64decode(clean_base64)
+        image = Image.open(io.BytesIO(img_data))
+        
+        # Convert to numpy array for EasyOCR
+        img_np = np.array(image.convert('RGB'))
+        log(f"SHAPE: {img_np.shape}")
+        
+        # Run OCR
+        log("RUNNING: EasyOCR (default mode)...")
+        results = reader.readtext(img_np, detail=0)
+        log(f"RESULT: Found {len(results)} items")
+        
+        # Combine text
+        text = " ".join(results)
+        log(f"TEXT: {text[:100]}...")
+        
+        return {
+            "success": True, 
+            "text": text,
+            "confidence": 0.8
+        }
+            
+    except Exception as e:
+        import traceback
+        err_msg = f"FATAL ERROR: {str(e)}\n{traceback.format_exc()}"
+        log(err_msg)
+        return {"success": False, "error": str(e), "text": ""}
 
 # YouTube Semantic Search is lazy-loaded
 
@@ -149,4 +245,5 @@ def extract_data(request: ExtractionRequest):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    # Enable reload for development
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)

@@ -186,10 +186,78 @@ def extract_video(file_url):
     except Exception as e:
         print(f"❌ Video extraction error ({job_id}): {str(e)}")
         raise e
-    finally:
         # Aggressive cleanup
         try:
             if os.path.exists(job_dir):
                 shutil.rmtree(job_dir, ignore_errors=True)
         except Exception as cleanup_err:
             print(f"⚠️ Cleanup failed for {job_id}: {cleanup_err}")
+
+def capture_frame_at_time(video_url, timestamp_seconds, crop=None):
+    """Capture a specific frame from a video URL using FFmpeg with optional cropping."""
+    job_id = f"snap_{str(uuid.uuid4())[:8]}"
+    base_temp = os.path.abspath("temp_video_jobs")
+    job_dir = os.path.join(base_temp, job_id)
+    os.makedirs(job_dir, exist_ok=True)
+    
+    frame_path = os.path.join(job_dir, f"frame_{job_id}.jpg")
+    try:
+        setup_ffmpeg()
+        
+        # Format timestamp for FFmpeg
+        import datetime
+        time_str = str(datetime.timedelta(seconds=float(timestamp_seconds)))
+        
+        # Use yt-dlp to get the direct stream URL for YouTube
+        input_url = video_url
+        youtube_terms = ['youtube.com', 'youtu.be']
+        if any(term in video_url for term in youtube_terms):
+            print(f"🎬 Resolving YouTube stream: {video_url}")
+            import yt_dlp
+            ydl_opts = {
+                'format': 'bestvideo[ext=mp4]/best[ext=mp4]/best',
+                'quiet': True, 
+                'no_warnings': True,
+                'skip_download': True
+            }
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(video_url, download=False)
+                input_url = info['url']
+
+        # Construct FFmpeg filters
+        filters = []
+        if crop:
+            # crop=w:h:x:y (where values are relative 0-1)
+            # FFmpeg allows expressions: iw*W:ih*H:iw*X:ih*Y
+            cx, cy, cw, ch = crop.get('x', 0), crop.get('y', 0), crop.get('w', 1), crop.get('h', 1)
+            filters.append(f"crop=iw*{cw}:ih*{ch}:iw*{cx}:ih*{cy}")
+        
+        # Add contrast enhancement for better OCR
+        filters.append("eq=contrast=1.5:brightness=0.1")
+        
+        vf_str = ",".join(filters) if filters else ""
+
+        print(f"📸 FFmpeg capturing frame at {time_str} (Filters: {vf_str})...")
+        
+        cmd = ["ffmpeg", "-ss", time_str, "-i", input_url]
+        if vf_str:
+            cmd.extend(["-vf", vf_str])
+        cmd.extend(["-vframes", "1", "-q:v", "2", "-f", "image2", frame_path, "-y"])
+        
+        subprocess.run(cmd, capture_output=True, check=True)
+        
+        import base64
+        with open(frame_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode('utf-8')
+            
+    except Exception as e:
+        print(f"❌ Frame capture error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return None
+    finally:
+        try:
+            if os.path.exists(job_dir):
+                shutil.rmtree(job_dir, ignore_errors=True)
+        except:
+            pass

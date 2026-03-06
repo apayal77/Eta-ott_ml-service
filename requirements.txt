@@ -22,3 +22,5 @@ html2text
 fpdf2
 python-docx
 google-api-python-client
+easyocr
+youtube-search-python
