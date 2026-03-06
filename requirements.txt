@@ -23,4 +23,5 @@ fpdf2
 python-docx
 google-api-python-client
 easyocr
+python-bidi==0.4.2
 youtube-search-python
