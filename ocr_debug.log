@@ -104,3 +104,35 @@ SHAPE: (788, 1854, 3)
 RUNNING: EasyOCR (default mode)...
 RESULT: Found 6 items
 TEXT: Lon5es Learnin CIA TRIAD Confidentiality Integrity Availability...
+
+--- [OCR START] type=video ---
+VIDEO: https://youtu.be/l1Dl_czYpJI?si=nxhZxZpi7HrmgniD at 212.89676s
+SUCCESS: Frame capture len=93516
+SHAPE: (608, 1734, 3)
+RUNNING: EasyOCR (default mode)...
+RESULT: Found 4 items
+TEXT: CIA TRIAD Confidentiality Integrity Availability...
+
+--- [OCR START] type=video ---
+VIDEO: https://youtu.be/l1Dl_czYpJI?si=nxhZxZpi7HrmgniD at 212.89676s
+SUCCESS: Frame capture len=93516
+SHAPE: (608, 1734, 3)
+RUNNING: EasyOCR (default mode)...
+RESULT: Found 4 items
+TEXT: CIA TRIAD Confidentiality Integrity Availability...
+
+--- [OCR START] type=video ---
+VIDEO: https://youtu.be/xv5lwFxxUw0?si=zYeQc7Ltq7nma3st at 230.59352s
+SUCCESS: Frame capture len=153208
+SHAPE: (684, 898, 3)
+RUNNING: EasyOCR (default mode)...
+RESULT: Found 39 items
+TEXT: #L A =0 , B= 1, @ 2 D-3 Y-24_ Ze Lt #zz 2*2 11 8 Plointexh Shork exomple [SI[HLY[TJI; [4 7 CakP (23 ...
+
+--- [OCR START] type=video ---
+VIDEO: https://youtu.be/xv5lwFxxUw0?si=zYeQc7Ltq7nma3st at 230.59352s
+SUCCESS: Frame capture len=153208
+SHAPE: (684, 898, 3)
+RUNNING: EasyOCR (default mode)...
+RESULT: Found 39 items
+TEXT: #L A =0 , B= 1, @ 2 D-3 Y-24_ Ze Lt #zz 2*2 11 8 Plointexh Shork exomple [SI[HLY[TJI; [4 7 CakP (23 ...

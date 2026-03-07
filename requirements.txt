@@ -1,11 +1,9 @@
-python-bidi==0.4.2
-numpy<2.0.0
-opencv-python-headless
 fastapi
 uvicorn
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch
 torchvision
+torchaudio
 sentence-transformers
 transformers
 pillow
@@ -24,5 +22,5 @@ html2text
 fpdf2
 python-docx
 google-api-python-client
-easyocr==1.7.1
+easyocr
 youtube-search-python
