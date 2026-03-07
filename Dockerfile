@@ -38,6 +38,8 @@ RUN playwright install --with-deps chromium
 
 # Copy application source
 COPY main.py ./
+COPY model_loader.py ./
+COPY youtube_semantic_search.py ./
 COPY extractors/ ./extractors/
 
 # Set ownership

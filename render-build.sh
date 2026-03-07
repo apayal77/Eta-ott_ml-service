@@ -5,5 +5,5 @@ set -o errexit
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# Install Playwright browser during build phase
-python -m playwright install chromium
+# Install Playwright browser with system dependencies during build phase
+python -m playwright install --with-deps chromium
