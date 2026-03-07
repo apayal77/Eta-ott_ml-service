@@ -15,13 +15,7 @@ async def startup_event():
     import sys
     print(f"🚀 Eta ML Service starting up on Python {sys.version}...")
     print(f"ℹ️ Working directory: {os.getcwd()}")
-    # Pre-load heavy models to avoid first-request latency
-    try:
-        get_ocr_reader()
-        get_embed_model()
-    except Exception as e:
-        print(f"⚠️ Warning: Model pre-loading failed: {e}")
-    
+    print("ℹ️ Models will be lazy-loaded on first request to conserve memory.")
     print("ℹ️ Playwright browser check skipped at startup (handled in build phase).")
 
 class ExtractionRequest(BaseModel):
