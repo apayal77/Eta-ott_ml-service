@@ -1,3 +1,6 @@
+python-bidi==0.4.2
+numpy<2.0.0
+opencv-python-headless
 fastapi
 uvicorn
 --extra-index-url https://download.pytorch.org/whl/cpu
@@ -22,6 +25,5 @@ html2text
 fpdf2
 python-docx
 google-api-python-client
-easyocr
-python-bidi==0.4.2
+easyocr==1.7.1
 youtube-search-python

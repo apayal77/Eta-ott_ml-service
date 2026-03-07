@@ -12,11 +12,16 @@ app = FastAPI(title="Eta ML Service", description="AI-powered data extraction se
 
 @app.on_event("startup")
 async def startup_event():
-    """
-    Startup event for Eta ML Service
-    """
-    print("🚀 Eta ML Service starting up...")
-    # Playwright installation is now handled in render-build.sh
+    import sys
+    print(f"🚀 Eta ML Service starting up on Python {sys.version}...")
+    print(f"ℹ️ Working directory: {os.getcwd()}")
+    # Pre-load heavy models to avoid first-request latency
+    try:
+        get_ocr_reader()
+        get_embed_model()
+    except Exception as e:
+        print(f"⚠️ Warning: Model pre-loading failed: {e}")
+    
     print("ℹ️ Playwright browser check skipped at startup (handled in build phase).")
 
 class ExtractionRequest(BaseModel):
@@ -69,10 +74,24 @@ _ocr_reader = None
 def get_ocr_reader():
     global _ocr_reader
     if _ocr_reader is None:
-        import easyocr
-        print("⏳ Loading EasyOCR reader...")
-        # Use CPU for now as it's more reliable in cloud envs without GPU
-        _ocr_reader = easyocr.Reader(['en'], gpu=False)
+        try:
+            import easyocr
+            print(f"⏳ Loading EasyOCR reader (version: {getattr(easyocr, '__version__', 'unknown')})...")
+            print(f"ℹ️ easyocr file: {easyocr.__file__}")
+            
+            # Check for Reader attribute
+            if not hasattr(easyocr, 'Reader'):
+                print("❌ ERROR: 'easyocr' module has no 'Reader' attribute!")
+                print(f"📦 Module contents: {dir(easyocr)}")
+                raise AttributeError("easyocr.Reader not found. Installation might be corrupted.")
+
+            # Use CPU for now as it's more reliable in cloud envs without GPU
+            _ocr_reader = easyocr.Reader(['en'], gpu=False)
+        except Exception as e:
+            print(f"❌ Failed to initialize EasyOCR: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise e
     return _ocr_reader
 
 @app.post("/ocr-frame")
@@ -125,10 +144,19 @@ def ocr_frame(request: OCRRequest):
 
         # Convert base64 to image
         img_data = base64.b64decode(clean_base64)
-        image = Image.open(io.BytesIO(img_data))
+        image = Image.open(io.BytesIO(img_data)).convert('RGB')
         
+        # Performance Hack: Resize if image is too large (Width > 1080)
+        # Deep learning OCR is exponentially slower on high-res images
+        max_w = 1080
+        if image.width > max_w:
+            w_percent = (max_w / float(image.width))
+            h_size = int((float(image.height) * float(w_percent)))
+            log(f"RESIZING: {image.width}x{image.height} -> {max_w}x{h_size}")
+            image = image.resize((max_w, h_size), Image.Resampling.LANCZOS)
+
         # Convert to numpy array for EasyOCR
-        img_np = np.array(image.convert('RGB'))
+        img_np = np.array(image)
         log(f"SHAPE: {img_np.shape}")
         
         # Run OCR
